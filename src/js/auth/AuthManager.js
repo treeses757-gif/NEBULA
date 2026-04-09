@@ -9,12 +9,10 @@ export class AuthManager {
   }
   
   async init() {
-    // Проверка сохраненной сессии
     const saved = localStorage.getItem('nebula_session');
     if (saved) {
       try {
         const session = JSON.parse(saved);
-        // Проверить валидность
         const userDoc = await getDoc(doc(db, 'users', session.nickname_lower));
         if (userDoc.exists()) {
           const userData = userDoc.data();
@@ -28,7 +26,9 @@ export class AuthManager {
             });
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Auto-login failed', e);
+      }
     }
   }
   
@@ -42,17 +42,16 @@ export class AuthManager {
     const password = document.getElementById('auth-password').value;
     const confirm = document.getElementById('auth-confirm')?.value;
     
-    // Базовая валидация
     if (!nickname.match(/^[A-Za-z0-9_]{3,16}$/)) {
-      this.showError('auth-nickname', 'Только латиница, цифры, _, 3-16 символов');
+      alert('Никнейм: только латиница, цифры, _, 3-16 символов');
       return;
     }
     if (password.length < 6) {
-      this.showError('auth-password', 'Минимум 6 символов');
+      alert('Пароль минимум 6 символов');
       return;
     }
     if (this.currentMode === 'register' && password !== confirm) {
-      this.showError('auth-confirm', 'Пароли не совпадают');
+      alert('Пароли не совпадают');
       return;
     }
     
@@ -137,12 +136,5 @@ export class AuthManager {
     await updateDoc(userRef, { coins: increment(amount) });
     this.app.user.coins += amount;
     this.app.ui.updateBalanceDisplay(this.app.user.coins);
-  }
-  
-  showError(fieldId, message) {
-    const input = document.getElementById(fieldId);
-    input.classList.add('error');
-    const errorDiv = document.querySelector(`[data-for="${fieldId}"]`);
-    if (errorDiv) errorDiv.textContent = message;
   }
 }
