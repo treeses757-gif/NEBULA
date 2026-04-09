@@ -4,33 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>NEBULA ARCADE</title>
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
-  <!-- CryptoJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- Основной CSS -->
   <link rel="stylesheet" href="src/css/style.css">
 </head>
 <body>
-  <!-- Canvas для звёздного фона -->
   <canvas id="starfield-canvas"></canvas>
   
-  <!-- Основной контейнер приложения -->
   <div id="app">
-    <!-- Хедер -->
     <header id="main-header">
       <div class="logo">NEBULA ARCADE</div>
       <div class="header-actions">
-        <!-- Гостевой блок -->
         <div id="guest-actions" class="auth-buttons">
           <button id="login-btn" class="glass-btn">Вход</button>
           <button id="register-btn" class="accent-btn">Регистрация</button>
         </div>
-        <!-- Авторизованный блок -->
         <div id="user-actions" class="user-panel" style="display: none;">
           <div class="balance">
             <i data-feather="dollar-sign" class="icon"></i>
@@ -42,18 +33,19 @@
           <button id="inventory-btn" class="icon-btn" title="Скины">
             <i data-feather="award"></i>
           </button>
+          <button id="create-game-btn" class="icon-btn" title="Создать игру">
+            <i data-feather="plus-circle"></i>
+          </button>
           <div class="avatar" id="user-avatar">
             <span id="avatar-letter">U</span>
           </div>
         </div>
-        <!-- Кнопка Fullscreen -->
         <button id="fullscreen-btn" class="icon-btn" title="Полный экран">
           <i data-feather="maximize"></i>
         </button>
       </div>
     </header>
 
-    <!-- Поисковая строка -->
     <div class="search-wrapper">
       <div class="search-container">
         <i data-feather="search" class="search-icon"></i>
@@ -61,12 +53,8 @@
       </div>
     </div>
 
-    <!-- Главное меню (сетка игр) -->
-    <main id="game-grid" class="game-grid">
-      <!-- Карточки будут сгенерированы динамически -->
-    </main>
+    <main id="game-grid" class="game-grid"></main>
 
-    <!-- Контейнер для матчмейкинга и игр (скрыт по умолчанию) -->
     <div id="matchmaking-screen" class="fullscreen-overlay" style="display: none;">
       <div class="matchmaking-content">
         <div class="radar-container">
@@ -78,12 +66,9 @@
       </div>
     </div>
 
-    <div id="game-container" style="display: none;">
-      <!-- Здесь будет рендериться активная игра -->
-    </div>
+    <div id="game-container" style="display: none;"></div>
 
-    <!-- Модальные окна -->
-    <!-- Окно входа/регистрации -->
+    <!-- Модалка входа/регистрации -->
     <div id="auth-modal" class="modal" style="display: none;">
       <div class="modal-backdrop"></div>
       <div class="modal-content">
@@ -139,7 +124,7 @@
       </div>
     </div>
 
-    <!-- Инвентарь (смена скина) -->
+    <!-- Инвентарь -->
     <div id="inventory-modal" class="modal" style="display: none;">
       <div class="modal-backdrop"></div>
       <div class="modal-content">
@@ -150,9 +135,42 @@
         <div class="skins-grid" id="inventory-container"></div>
       </div>
     </div>
+
+    <!-- Загрузка игры -->
+    <div id="upload-modal" class="modal" style="display: none;">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Создать игру</h2>
+          <button class="modal-close">&times;</button>
+        </div>
+        <form id="upload-form">
+          <div class="input-group">
+            <label for="game-title">Название</label>
+            <input type="text" id="game-title" required maxlength="30">
+          </div>
+          <div class="input-group">
+            <label for="game-players">Количество игроков</label>
+            <select id="game-players">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="game-avatar">Аватарка (PNG/JPG)</label>
+            <input type="file" id="game-avatar" accept="image/png,image/jpeg" required>
+          </div>
+          <div class="input-group">
+            <label for="game-file">HTML-файл игры (до 40 КБ)</label>
+            <input type="file" id="game-file" accept=".html,.htm" required>
+          </div>
+          <button type="submit" class="accent-btn full-width">Загрузить</button>
+        </form>
+      </div>
+    </div>
   </div>
 
-  <!-- Основной скрипт как модуль -->
   <script type="module" src="src/js/main.js"></script>
 </body>
 </html>
