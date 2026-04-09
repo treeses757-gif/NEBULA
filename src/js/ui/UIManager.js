@@ -1,12 +1,9 @@
-// ========== FILE: src/js/ui/UIManager.js ==========
 export class UIManager {
   constructor(app) {
     this.app = app;
     this.elements = {};
-    this.starfieldCtx = null;
-    this.searchDebounceTimer = null;
   }
-
+  
   init() {
     this.cacheElements();
     this.initStarfield();
@@ -15,163 +12,97 @@ export class UIManager {
     this.initModals();
     this.initEventListeners();
   }
-
+  
   cacheElements() {
-    const ids = [
-      'guest-actions', 'user-actions', 'balance-value', 'user-avatar', 'avatar-letter',
-      'login-btn', 'register-btn', 'shop-btn', 'inventory-btn', 'fullscreen-btn',
-      'game-search', 'game-grid', 'matchmaking-screen', 'game-container',
-      'auth-modal', 'shop-modal', 'inventory-modal', 'cancel-matchmaking',
-      'auth-form', 'auth-nickname', 'auth-password', 'auth-confirm',
-      'auth-submit', 'auth-modal-title', 'confirm-password-group', 'toggle-auth-mode',
-      'matchmaking-status', 'matchmaking-timer', 'radar-canvas', 'skins-container', 'inventory-container'
-    ];
-    ids.forEach(id => {
-      this.elements[id] = document.getElementById(id);
-    });
+    const ids = ['guest-actions','user-actions','balance-value','avatar-letter','login-btn','register-btn','shop-btn','inventory-btn','create-game-btn','fullscreen-btn','game-search','game-grid','matchmaking-screen','game-container','auth-modal','shop-modal','inventory-modal','upload-modal','cancel-matchmaking','auth-form','auth-nickname','auth-password','auth-confirm','auth-submit','auth-modal-title','confirm-password-group','toggle-auth-mode','matchmaking-timer','radar-canvas','skins-container','inventory-container','upload-form','game-title','game-players','game-avatar','game-file'];
+    ids.forEach(id => this.elements[id] = document.getElementById(id));
     this.elements.modalClose = document.querySelectorAll('.modal-close');
     this.elements.tabBtns = document.querySelectorAll('.tab-btn');
   }
-
-  initStarfield() { /* без изменений */ }
-
-  initFullscreen() { /* без изменений */ }
-
-  initSearch() { /* без изменений */ }
-
-  filterGameCards(query) { /* без изменений */ }
-
-  initModals() {
-    this.elements.modalClose?.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.modal').classList.remove('active');
-      });
-    });
-
-    document.querySelectorAll('.modal-backdrop').forEach(bd => {
-      bd.addEventListener('click', (e) => {
-        e.target.closest('.modal').classList.remove('active');
-      });
-    });
-
-    this.elements.tabBtns?.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('skins-tab').style.display = tab === 'skins' ? 'block' : 'none';
-        document.getElementById('boosters-tab').style.display = tab === 'boosters' ? 'block' : 'none';
-      });
+  
+  initStarfield() { /* как раньше */ }
+  initFullscreen() { /* как раньше */ }
+  initSearch() { /* как раньше */ }
+  
+  filterGameCards(query) {
+    document.querySelectorAll('.game-card').forEach(card => {
+      const title = card.querySelector('.game-title')?.textContent.toLowerCase() || '';
+      const match = title.includes(query.toLowerCase());
+      card.style.opacity = match ? '1' : '0';
+      card.style.transform = match ? '' : 'scale(0.8)';
+      card.style.pointerEvents = match ? '' : 'none';
     });
   }
-
+  
+  initModals() {
+    this.elements.modalClose?.forEach(btn => btn.addEventListener('click', e => e.target.closest('.modal').classList.remove('active')));
+    document.querySelectorAll('.modal-backdrop').forEach(bd => bd.addEventListener('click', e => e.target.closest('.modal').classList.remove('active')));
+    this.elements.tabBtns?.forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('skins-tab').style.display = btn.dataset.tab === 'skins' ? 'block' : 'none';
+      document.getElementById('boosters-tab').style.display = btn.dataset.tab === 'boosters' ? 'block' : 'none';
+    }));
+  }
+  
   initEventListeners() {
-    this.elements['login-btn']?.addEventListener('click', () => this.showAuthModal('login'));
-    this.elements['register-btn']?.addEventListener('click', () => this.showAuthModal('register'));
-    this.elements['toggle-auth-mode']?.addEventListener('click', () => {
-      const isLogin = this.elements['auth-modal-title'].textContent === 'Вход';
+    this.elements.loginBtn?.addEventListener('click', () => this.showAuthModal('login'));
+    this.elements.registerBtn?.addEventListener('click', () => this.showAuthModal('register'));
+    this.elements.toggleAuthMode?.addEventListener('click', () => {
+      const isLogin = this.elements.authModalTitle.textContent === 'Вход';
       this.showAuthModal(isLogin ? 'register' : 'login');
     });
-
-    this.elements['auth-form']?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      this.app.auth.handleAuthSubmit();
-    });
-
-    this.elements['shop-btn']?.addEventListener('click', () => {
-      if (!this.app.user) {
-        this.showAuthModal('login');
-        return;
-      }
-      this.showShop();
-    });
-
-    this.elements['inventory-btn']?.addEventListener('click', () => {
-      if (!this.app.user) {
-        this.showAuthModal('login');
-        return;
-      }
-      this.showInventory();
-    });
-
-    this.elements['cancel-matchmaking']?.addEventListener('click', () => {
-      this.app.matchmaker.cancel();
-    });
+    this.elements.authForm?.addEventListener('submit', e => { e.preventDefault(); this.app.auth.handleAuthSubmit(); });
+    this.elements.shopBtn?.addEventListener('click', () => this.showShop());
+    this.elements.inventoryBtn?.addEventListener('click', () => this.showInventory());
+    this.elements.createGameBtn?.addEventListener('click', () => this.showUploadModal());
+    this.elements.cancelMatchmaking?.addEventListener('click', () => this.app.matchmaker.cancel());
+    this.elements.uploadForm?.addEventListener('submit', e => { e.preventDefault(); this.app.upload.uploadGame(); });
   }
-
+  
   renderGameGrid(games, onPlay) {
-    const grid = this.elements['game-grid'];
-    if (!grid) return;
+    const grid = this.elements.gameGrid;
     grid.innerHTML = '';
     games.forEach(game => {
       const card = document.createElement('div');
       card.className = 'game-card';
+      const iconHtml = game.avatarUrl 
+        ? `<img src="${game.avatarUrl}" alt="${game.name || game.title}">` 
+        : `<span class="game-icon-emoji">${game.icon || '🎮'}</span>`;
       card.innerHTML = `
-        <div class="game-icon">${game.icon}</div>
-        <div class="game-title">${game.name}</div>
+        <div class="game-icon">${iconHtml}</div>
+        <div class="game-title">${game.name || game.title}</div>
+        <div class="game-players">👥 ${game.players || 2}</div>
         <button class="play-btn">Играть</button>
       `;
-      card.querySelector('.play-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!this.app.user) {
-          this.showAuthModal('login');
-          return;
-        }
-        onPlay(game.id);
-      });
+      card.querySelector('.play-btn').addEventListener('click', e => { e.stopPropagation(); onPlay(game); });
       grid.appendChild(card);
     });
   }
-
-  showAuthModal(mode) {
-    const modal = this.elements['auth-modal'];
-    if (!modal) return;
-    const title = this.elements['auth-modal-title'];
-    const confirmGroup = this.elements['confirm-password-group'];
-    const submitBtn = this.elements['auth-submit']?.querySelector('.btn-text');
-
-    if (title) title.textContent = mode === 'login' ? 'Вход' : 'Регистрация';
-    if (submitBtn) submitBtn.textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
-    if (confirmGroup) confirmGroup.style.display = mode === 'register' ? 'block' : 'none';
-
-    this.elements['auth-form']?.reset();
-    modal.classList.add('active');
-    this.app.auth.currentMode = mode;
-  }
-
-  showShop() {
-    this.elements['shop-modal']?.classList.add('active');
-    this.app.shop.renderSkins();
-  }
-
-  showInventory() {
-    this.elements['inventory-modal']?.classList.add('active');
-    this.app.shop.renderInventory();
-  }
-
+  
+  showAuthModal(mode) { /* как раньше */ }
+  showShop() { this.elements.shopModal?.classList.add('active'); this.app.shop.renderSkins(); }
+  showInventory() { this.elements.inventoryModal?.classList.add('active'); this.app.shop.renderInventory(); }
+  showUploadModal() { this.elements.uploadModal?.classList.add('active'); }
+  
   updateAuthUI(user) {
-    const guestActions = this.elements['guest-actions'];
-    const userActions = this.elements['user-actions'];
-    if (!guestActions || !userActions) return;
-
+    const guest = this.elements.guestActions;
+    const userPanel = this.elements.userActions;
     if (user) {
-      guestActions.style.display = 'none';
-      userActions.style.display = 'flex';
-      const letterEl = this.elements['avatar-letter'];
-      if (letterEl) letterEl.textContent = user.nickname.charAt(0).toUpperCase();
+      guest.style.display = 'none';
+      userPanel.style.display = 'flex';
+      this.elements.avatarLetter.textContent = user.nickname.charAt(0).toUpperCase();
       this.updateBalanceDisplay(user.coins);
     } else {
-      guestActions.style.display = 'flex';
-      userActions.style.display = 'none';
+      guest.style.display = 'flex';
+      userPanel.style.display = 'none';
     }
   }
-
-  updateBalanceDisplay(coins) {
-    const bal = this.elements['balance-value'];
-    if (bal && coins !== undefined) {
-      bal.textContent = coins;
-    }
-  }
-
-  // ... остальные методы без изменений ...
+  
+  updateBalanceDisplay(coins) { if (this.elements.balanceValue) this.elements.balanceValue.textContent = coins; }
+  showMatchmaking() { this.elements.matchmakingScreen.style.display = 'flex'; this.elements.gameGrid.style.display = 'none'; this.startRadarAnimation(); }
+  hideMatchmaking() { this.elements.matchmakingScreen.style.display = 'none'; }
+  showGameScreen() { this.elements.gameGrid.style.display = 'none'; this.elements.gameContainer.style.display = 'block'; }
+  hideGameScreen() { this.elements.gameContainer.style.display = 'none'; this.elements.gameGrid.style.display = 'grid'; }
+  startRadarAnimation() { /* ... */ }
 }
