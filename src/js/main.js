@@ -1,14 +1,12 @@
-// ========== FILE: src/js/main.js ==========
-import { rtdb } from './firebase-config.js';
+import { rtdb, db } from './firebase-config.js';
 import { UIManager } from './ui/UIManager.js';
 import { AuthManager } from './auth/AuthManager.js';
 import { ShopManager } from './shop/ShopManager.js';
 import { Matchmaker } from './matchmaking/Matchmaker.js';
+import { UploadManager } from './upload/UploadManager.js';
 import { ChronoShiftGame } from './games/ChronoShift.js';
-import { GravityWellGame } from './games/GravityWell.js';
-import { RuneWeaverGame } from './games/RuneWeaver.js';
-import { DrumEchoGame } from './games/DrumEcho.js';
-import { SpectralAuctionGame } from './games/SpectralAuction.js';
+import { UserGameController } from './games/UserGameController.js';
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 class NebulaArcade {
   constructor() {
@@ -16,17 +14,15 @@ class NebulaArcade {
     this.auth = new AuthManager(this);
     this.shop = new ShopManager(this);
     this.matchmaker = new Matchmaker(this);
+    this.upload = new UploadManager(this);
     
     this.games = {
-      chronoShift: ChronoShiftGame,
-      gravityWell: GravityWellGame,
-      runeWeaver: RuneWeaverGame,
-      drumEcho: DrumEchoGame,
-      spectralAuction: SpectralAuctionGame
+      builtin_chrono: { class: ChronoShiftGame, name: 'Хроносдвиг', icon: '⏳', players: 2 }
     };
     
     this.currentGame = null;
     this.user = null;
+    this.customGames = [];
     
     this.init();
   }
@@ -34,40 +30,42 @@ class NebulaArcade {
   async init() {
     this.ui.init();
     await this.auth.init();
+    await this.loadCustomGames();
     this.renderGameCards();
     this.ui.updateBalanceDisplay();
   }
   
-  renderGameCards() {
-    const gamesData = [
-      { id: 'chronoShift', name: 'Хроносдвиг', icon: '⏳' }, // замените на путь к картинке
-      { id: 'gravityWell', name: 'Гравитационный колодец', icon: '🌀' },
-      { id: 'runeWeaver', name: 'Рунный сплетник', icon: '🔮' },
-      { id: 'drumEcho', name: 'Эхо барабанов', icon: '🥁' },
-      { id: 'spectralAuction', name: 'Спектральный аукцион', icon: '👻' }
-    ];
-    
-    this.ui.renderGameGrid(gamesData, (gameId) => this.startMatchmaking(gameId));
+  async loadCustomGames() {
+    const snapshot = await getDocs(collection(db, 'games'));
+    this.customGames = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
   
-  startMatchmaking(gameId) {
+  renderGameCards() {
+    const allGames = [
+      ...Object.entries(this.games).map(([id, g]) => ({ id, ...g, isBuiltin: true })),
+      ...this.customGames.map(g => ({ ...g, isBuiltin: false }))
+    ];
+    
+    this.ui.renderGameGrid(allGames, (game) => this.startMatchmaking(game));
+  }
+  
+  startMatchmaking(game) {
     if (!this.user) {
       this.ui.showAuthModal('login');
       return;
     }
-    this.matchmaker.joinQueue(gameId);
+    this.matchmaker.joinQueue(game);
   }
   
-  onMatchFound(roomId, gameId, opponent, isHost) {
+  onMatchFound(roomId, game, opponent, isHost) {
     this.ui.hideMatchmaking();
-    this.startGame(gameId, roomId, opponent, isHost);
+    this.startGame(game, roomId, opponent, isHost);
   }
   
-  startGame(gameId, roomId, opponent, isHost) {
-    const GameClass = this.games[gameId];
-    if (!GameClass) return;
-    
+  startGame(game, roomId, opponent, isHost) {
     this.ui.showGameScreen();
+    
+    const GameClass = game.isBuiltin ? game.class : UserGameController;
     
     this.currentGame = new GameClass({
       roomId,
@@ -75,6 +73,7 @@ class NebulaArcade {
       isHost,
       user: this.user,
       db: rtdb,
+      gameData: game,
       onGameEnd: (result) => this.onGameEnd(result),
       onCoinsEarned: (amount) => this.auth.addCoins(amount)
     });
@@ -87,6 +86,11 @@ class NebulaArcade {
     this.currentGame = null;
     this.ui.hideGameScreen();
     this.ui.updateBalanceDisplay();
+  }
+  
+  async refreshGames() {
+    await this.loadCustomGames();
+    this.renderGameCards();
   }
 }
 
