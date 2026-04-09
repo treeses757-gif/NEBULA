@@ -1,3 +1,4 @@
+// ========== FILE: src/css/style.css ==========
 /* ===== RESET & BASE ===== */
 * {
   margin: 0;
@@ -205,7 +206,7 @@ body {
   background: rgba(30, 30, 50, 0.6);
   backdrop-filter: blur(8px);
   border-radius: 24px;
-  padding: 20px 16px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -222,9 +223,19 @@ body {
 }
 
 .game-icon {
-  font-size: 48px;
+  font-size: 80px;
   margin-bottom: 12px;
   transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.game-icon img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
 }
 
 .game-card:hover .game-icon {
@@ -522,6 +533,15 @@ body {
   bottom: 0;
   z-index: 150;
   background: #0a0a15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-container canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 /* ===== ADAPTIVE ===== */
@@ -539,5 +559,16 @@ body {
   .game-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+  }
+  .game-icon {
+    font-size: 60px;
+  }
+  .game-icon img {
+    width: 70px;
+    height: 70px;
+  }
+  .modal-content {
+    padding: 16px;
+    width: 95%;
   }
 }
