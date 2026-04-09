@@ -1,5 +1,5 @@
 // ========== FILE: src/js/main.js ==========
-import './firebase-config.js';
+import { rtdb } from './firebase-config.js';
 import { UIManager } from './ui/UIManager.js';
 import { AuthManager } from './auth/AuthManager.js';
 import { ShopManager } from './shop/ShopManager.js';
@@ -26,7 +26,7 @@ class NebulaArcade {
     };
     
     this.currentGame = null;
-    this.user = null; // { uid, nickname, coins, inventory, currentSkin }
+    this.user = null;
     
     this.init();
   }
@@ -40,7 +40,7 @@ class NebulaArcade {
   
   renderGameCards() {
     const gamesData = [
-      { id: 'chronoShift', name: 'Хроносдвиг', icon: '⏳' },
+      { id: 'chronoShift', name: 'Хроносдвиг', icon: '⏳' }, // замените на путь к картинке
       { id: 'gravityWell', name: 'Гравитационный колодец', icon: '🌀' },
       { id: 'runeWeaver', name: 'Рунный сплетник', icon: '🔮' },
       { id: 'drumEcho', name: 'Эхо барабанов', icon: '🥁' },
@@ -67,6 +67,8 @@ class NebulaArcade {
     const GameClass = this.games[gameId];
     if (!GameClass) return;
     
+    this.ui.showGameScreen();
+    
     this.currentGame = new GameClass({
       roomId,
       opponent,
@@ -81,14 +83,13 @@ class NebulaArcade {
   }
   
   onGameEnd(result) {
-    // Обработка завершения игры
     this.currentGame?.destroy();
     this.currentGame = null;
-    this.ui.showMainMenu();
+    this.ui.hideGameScreen();
+    this.ui.updateBalanceDisplay();
   }
 }
 
-// Запуск приложения после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
   window.gameApp = new NebulaArcade();
   feather.replace();
