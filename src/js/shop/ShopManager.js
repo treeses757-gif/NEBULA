@@ -15,6 +15,7 @@ export class ShopManager {
   
   renderSkins() {
     const container = document.getElementById('skins-container');
+    if (!container) return;
     container.innerHTML = '';
     const user = this.app.user;
     if (!user) return;
@@ -44,9 +45,6 @@ export class ShopManager {
     const user = this.app.user;
     if (!user || user.coins < skin.price || user.inventory.includes(skin.id)) return;
     
-    // Анимация "монетки летят" (упрощенно)
-    this.animateCoinsFly();
-    
     const userRef = doc(db, 'users', user.uid);
     await updateDoc(userRef, {
       coins: increment(-skin.price),
@@ -57,16 +55,11 @@ export class ShopManager {
     user.inventory.push(skin.id);
     this.app.ui.updateBalanceDisplay(user.coins);
     this.renderSkins();
-    
-    // Звук (base64 не реализован для краткости, можно добавить)
-  }
-  
-  animateCoinsFly() {
-    // Заглушка
   }
   
   renderInventory() {
     const container = document.getElementById('inventory-container');
+    if (!container) return;
     container.innerHTML = '';
     const user = this.app.user;
     if (!user) return;
@@ -93,6 +86,5 @@ export class ShopManager {
     await updateDoc(userRef, { currentSkin: skinId });
     user.currentSkin = skinId;
     this.renderInventory();
-    // Можно обновить аватар
   }
 }
