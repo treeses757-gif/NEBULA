@@ -23,15 +23,21 @@ export class UIManager {
       'game-search', 'game-grid', 'matchmaking-screen', 'game-container',
       'auth-modal', 'shop-modal', 'inventory-modal', 'cancel-matchmaking',
       'auth-form', 'auth-nickname', 'auth-password', 'auth-confirm',
-      'auth-submit', 'auth-modal-title', 'confirm-password-group', 'toggle-auth-mode'
+      'auth-submit', 'auth-modal-title', 'confirm-password-group', 'toggle-auth-mode',
+      'matchmaking-status', 'matchmaking-timer', 'radar-canvas'
     ];
-    ids.forEach(id => this.elements[id] = document.getElementById(id));
+    ids.forEach(id => {
+      this.elements[id] = document.getElementById(id);
+    });
     this.elements.modalClose = document.querySelectorAll('.modal-close');
     this.elements.tabBtns = document.querySelectorAll('.tab-btn');
+    this.elements.skinsContainer = document.getElementById('skins-container');
+    this.elements.inventoryContainer = document.getElementById('inventory-container');
   }
   
   initStarfield() {
     const canvas = document.getElementById('starfield-canvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     this.starfieldCtx = ctx;
     
@@ -54,6 +60,7 @@ export class UIManager {
     resize();
     
     const animate = () => {
+      if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#ffffff';
       
@@ -76,23 +83,26 @@ export class UIManager {
   }
   
   initFullscreen() {
-    const btn = this.elements.fullscreenBtn;
+    const btn = this.elements['fullscreen-btn'];
+    if (!btn) {
+      console.warn('Fullscreen button not found');
+      return;
+    }
     const icon = btn.querySelector('i');
     
     btn.addEventListener('click', () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
-        icon.setAttribute('data-feather', 'minimize');
+        if (icon) icon.setAttribute('data-feather', 'minimize');
         document.getElementById('main-header').classList.add('fullscreen-active');
       } else {
         document.exitFullscreen();
-        icon.setAttribute('data-feather', 'maximize');
+        if (icon) icon.setAttribute('data-feather', 'maximize');
         document.getElementById('main-header').classList.remove('fullscreen-active');
       }
-      feather.replace();
+      if (icon) feather.replace();
     });
     
-    // Анимация вращения
     btn.addEventListener('click', () => {
       btn.style.transform = 'rotate(15deg)';
       setTimeout(() => btn.style.transform = '', 150);
@@ -100,7 +110,8 @@ export class UIManager {
   }
   
   initSearch() {
-    const input = this.elements.gameSearch;
+    const input = this.elements['game-search'];
+    if (!input) return;
     input.addEventListener('input', () => {
       clearTimeout(this.searchDebounceTimer);
       this.searchDebounceTimer = setTimeout(() => {
@@ -112,7 +123,9 @@ export class UIManager {
   filterGameCards(query) {
     const cards = document.querySelectorAll('.game-card');
     cards.forEach(card => {
-      const title = card.querySelector('.game-title').textContent.toLowerCase();
+      const titleElem = card.querySelector('.game-title');
+      if (!titleElem) return;
+      const title = titleElem.textContent.toLowerCase();
       const shouldShow = title.includes(query) || query === '';
       
       card.style.transition = 'opacity 0.2s, transform 0.2s';
@@ -129,8 +142,7 @@ export class UIManager {
   }
   
   initModals() {
-    // Закрытие по крестику и бэкдропу
-    this.elements.modalClose.forEach(btn => {
+    this.elements.modalClose?.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.target.closest('.modal').classList.remove('active');
       });
@@ -142,38 +154,40 @@ export class UIManager {
       });
     });
     
-    // Переключение вкладок магазина
-    this.elements.tabBtns.forEach(btn => {
+    this.elements.tabBtns?.forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById('skins-tab').style.display = tab === 'skins' ? 'block' : 'none';
-        document.getElementById('boosters-tab').style.display = tab === 'boosters' ? 'block' : 'none';
+        const skinsTab = document.getElementById('skins-tab');
+        const boostersTab = document.getElementById('boosters-tab');
+        if (skinsTab) skinsTab.style.display = tab === 'skins' ? 'block' : 'none';
+        if (boostersTab) boostersTab.style.display = tab === 'boosters' ? 'block' : 'none';
       });
     });
   }
   
   initEventListeners() {
-    this.elements.loginBtn.addEventListener('click', () => this.showAuthModal('login'));
-    this.elements.registerBtn.addEventListener('click', () => this.showAuthModal('register'));
-    this.elements.toggleAuthMode.addEventListener('click', () => {
-      const isLogin = this.elements.authModalTitle.textContent === 'Вход';
+    this.elements['login-btn']?.addEventListener('click', () => this.showAuthModal('login'));
+    this.elements['register-btn']?.addEventListener('click', () => this.showAuthModal('register'));
+    this.elements['toggle-auth-mode']?.addEventListener('click', () => {
+      const isLogin = this.elements['auth-modal-title'].textContent === 'Вход';
       this.showAuthModal(isLogin ? 'register' : 'login');
     });
     
-    this.elements.authForm.addEventListener('submit', (e) => {
+    this.elements['auth-form']?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.app.auth.handleAuthSubmit();
     });
     
-    this.elements.shopBtn.addEventListener('click', () => this.showShop());
-    this.elements.inventoryBtn.addEventListener('click', () => this.showInventory());
-    this.elements.cancelMatchmaking.addEventListener('click', () => this.app.matchmaker.cancel());
+    this.elements['shop-btn']?.addEventListener('click', () => this.showShop());
+    this.elements['inventory-btn']?.addEventListener('click', () => this.showInventory());
+    this.elements['cancel-matchmaking']?.addEventListener('click', () => this.app.matchmaker.cancel());
   }
   
   renderGameGrid(games, onPlay) {
-    const grid = this.elements.gameGrid;
+    const grid = this.elements['game-grid'];
+    if (!grid) return;
     grid.innerHTML = '';
     games.forEach(game => {
       const card = document.createElement('div');
@@ -192,86 +206,117 @@ export class UIManager {
   }
   
   showAuthModal(mode) {
-    const modal = this.elements.authModal;
-    const title = this.elements.authModalTitle;
-    const confirmGroup = this.elements.confirmPasswordGroup;
-    const submitBtn = this.elements.authSubmit.querySelector('.btn-text');
+    const modal = this.elements['auth-modal'];
+    if (!modal) return;
+    const title = this.elements['auth-modal-title'];
+    const confirmGroup = this.elements['confirm-password-group'];
+    const submitBtn = this.elements['auth-submit']?.querySelector('.btn-text');
     
-    title.textContent = mode === 'login' ? 'Вход' : 'Регистрация';
-    submitBtn.textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
-    confirmGroup.style.display = mode === 'register' ? 'block' : 'none';
+    if (title) title.textContent = mode === 'login' ? 'Вход' : 'Регистрация';
+    if (submitBtn) submitBtn.textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
+    if (confirmGroup) confirmGroup.style.display = mode === 'register' ? 'block' : 'none';
     
-    this.elements.authForm.reset();
+    this.elements['auth-form']?.reset();
     modal.classList.add('active');
-    this.app.auth.currentMode = mode;
+    if (this.app.auth) this.app.auth.currentMode = mode;
   }
   
   showShop() {
-    this.elements.shopModal.classList.add('active');
+    this.elements['shop-modal']?.classList.add('active');
     this.app.shop.renderSkins();
   }
   
   showInventory() {
-    this.elements.inventoryModal.classList.add('active');
+    this.elements['inventory-modal']?.classList.add('active');
     this.app.shop.renderInventory();
   }
   
   updateAuthUI(user) {
+    const guestActions = this.elements['guest-actions'];
+    const userActions = this.elements['user-actions'];
+    if (!guestActions || !userActions) return;
+    
     if (user) {
-      this.elements.guestActions.style.display = 'none';
-      this.elements.userActions.style.display = 'flex';
-      this.elements.avatarLetter.textContent = user.nickname.charAt(0).toUpperCase();
+      guestActions.style.display = 'none';
+      userActions.style.display = 'flex';
+      const letterEl = this.elements['avatar-letter'];
+      if (letterEl) letterEl.textContent = user.nickname.charAt(0).toUpperCase();
       this.updateBalanceDisplay(user.coins);
     } else {
-      this.elements.guestActions.style.display = 'flex';
-      this.elements.userActions.style.display = 'none';
+      guestActions.style.display = 'flex';
+      userActions.style.display = 'none';
     }
   }
   
   updateBalanceDisplay(coins) {
-    if (coins !== undefined) {
-      this.elements.balanceValue.textContent = coins;
+    const bal = this.elements['balance-value'];
+    if (bal && coins !== undefined) {
+      bal.textContent = coins;
     }
   }
   
   animateBalanceChange(from, to) {
-    const el = this.elements.balanceValue;
+    const el = this.elements['balance-value'];
+    if (!el) return;
     const duration = 800;
     const start = performance.now();
     const update = (now) => {
       const t = Math.min((now - start) / duration, 1);
-      const eased = cubicBezier(0.2, 0.9, 0.4, 1, t);
+      const eased = this.cubicBezier(0.2, 0.9, 0.4, 1, t);
       el.textContent = Math.floor(from + (to - from) * eased);
       if (t < 1) requestAnimationFrame(update);
     };
     requestAnimationFrame(update);
   }
   
+  cubicBezier(x1, y1, x2, y2, t) {
+    // Упрощенная аппроксимация для счетчика
+    return t;
+  }
+  
   showMatchmaking() {
-    this.elements.matchmakingScreen.style.display = 'flex';
-    this.elements.gameGrid.style.display = 'none';
+    const screen = this.elements['matchmaking-screen'];
+    const grid = this.elements['game-grid'];
+    if (screen) screen.style.display = 'flex';
+    if (grid) grid.style.display = 'none';
     this.startRadarAnimation();
   }
   
   hideMatchmaking() {
-    this.elements.matchmakingScreen.style.display = 'none';
-    this.elements.gameGrid.style.display = 'grid';
+    const screen = this.elements['matchmaking-screen'];
+    if (screen) screen.style.display = 'none';
   }
   
   showMainMenu() {
-    this.elements.gameContainer.style.display = 'none';
-    this.elements.gameGrid.style.display = 'grid';
+    const gameContainer = this.elements['game-container'];
+    const grid = this.elements['game-grid'];
+    if (gameContainer) gameContainer.style.display = 'none';
+    if (grid) grid.style.display = 'grid';
+  }
+  
+  showGameScreen() {
+    const grid = this.elements['game-grid'];
+    const gameContainer = this.elements['game-container'];
+    if (grid) grid.style.display = 'none';
+    if (gameContainer) gameContainer.style.display = 'block';
+  }
+  
+  hideGameScreen() {
+    const gameContainer = this.elements['game-container'];
+    const grid = this.elements['game-grid'];
+    if (gameContainer) gameContainer.style.display = 'none';
+    if (grid) grid.style.display = 'grid';
   }
   
   startRadarAnimation() {
-    // Простая анимация радара
-    const canvas = document.getElementById('radar-canvas');
+    const canvas = this.elements['radar-canvas'];
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let angle = 0;
     const draw = () => {
-      if (this.elements.matchmakingScreen.style.display === 'none') return;
+      const screen = this.elements['matchmaking-screen'];
+      if (!screen || screen.style.display === 'none') return;
       ctx.clearRect(0, 0, 200, 200);
-      // Рисуем круги
       ctx.strokeStyle = '#6C5CE7';
       ctx.lineWidth = 1;
       for (let i = 1; i <= 3; i++) {
@@ -279,7 +324,6 @@ export class UIManager {
         ctx.arc(100, 100, 30 * i, 0, Math.PI * 2);
         ctx.stroke();
       }
-      // Вращающаяся линия
       ctx.beginPath();
       ctx.moveTo(100, 100);
       const x = 100 + Math.cos(angle) * 90;
@@ -293,9 +337,4 @@ export class UIManager {
     };
     draw();
   }
-}
-
-function cubicBezier(x1, y1, x2, y2, t) {
-  // Упрощенная аппроксимация
-  return t;
 }
